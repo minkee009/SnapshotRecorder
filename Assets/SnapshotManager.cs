@@ -21,17 +21,27 @@ public class SnapshotManager : MonoBehaviour
 
     public Snapshot currentSnapshot = new Snapshot();
     public float currentTiming;
+    private Snapshot _lastRewindSnapshot; 
 
 
     private void Start()
     {
-        snapshotBuffer.Add(new Snapshot(rb.position, rb.rotation, rb.velocity, rb.angularVelocity));
+        snapshotBuffer.Add(new Snapshot(rb.position, rb.rotation, rb.linearVelocity, rb.angularVelocity));
+        _lastRewindSnapshot = snapshotBuffer[0];
     }
 
     private void Update()
     {
         wasRewind = isRewind;
         isRewind = Input.GetKey(KeyCode.Space);
+
+        if(wasRewind && !isRewind)
+        {
+            rb.isKinematic = false;
+            rb.linearVelocity = _lastRewindSnapshot.velocity;
+            rb.angularVelocity = _lastRewindSnapshot.angularVelocity;
+        }
+
         RecordSnapshot();
         RewindSnapshot();
     }
@@ -59,7 +69,7 @@ public class SnapshotManager : MonoBehaviour
         if (accumlator > accumlatorTiming)
         {
             accumlator = 0f;
-            snapshotBuffer.Add(new Snapshot(rb.position, rb.rotation, rb.velocity,rb.angularVelocity));//, Time.time));
+            snapshotBuffer.Add(new Snapshot(rb.position, rb.rotation, rb.linearVelocity,rb.angularVelocity));//, Time.time));
             if (snapshotBuffer.Count * accumlatorTiming > snapshotTimeLimit)
             {
                 snapshotBuffer.RemoveAt(0);
@@ -77,7 +87,7 @@ public class SnapshotManager : MonoBehaviour
 
         if (isRewind && !wasRewind)
         {
-            currentSnapshot = new Snapshot(rb.position, rb.rotation, rb.velocity, rb.angularVelocity);
+            currentSnapshot = new Snapshot(rb.position, rb.rotation, rb.linearVelocity, rb.angularVelocity);
             currentTiming = accumlator;
         }
 
@@ -99,6 +109,7 @@ public class SnapshotManager : MonoBehaviour
 
         rb.position = rewindSnapshot.position;
         rb.rotation = rewindSnapshot.rotation;
+        _lastRewindSnapshot = rewindSnapshot;
     }
 }
 
